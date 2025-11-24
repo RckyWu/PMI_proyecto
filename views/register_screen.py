@@ -1,0 +1,83 @@
+"""
+Pantalla de registro de nuevos usuarios
+"""
+
+import tkinter as tk
+from tkinter import messagebox
+from config import COLORS
+
+
+class RegisterScreen(tk.Frame):
+    """Frame para el registro de nuevos usuarios"""
+    
+    def __init__(self, master, go_to_login):
+        super().__init__(master)
+        self.master = master
+        self.go_to_login = go_to_login
+        self.configure(bg=COLORS["background"])
+
+        # Título
+        tk.Label(
+            self, 
+            text="Crear Cuenta", 
+            bg=COLORS["background"], 
+            fg=COLORS["primary"], 
+            font=("Arial", 18, "bold")
+        ).pack(pady=15)
+
+        # Campo de correo
+        tk.Label(self, fg=COLORS["primary"], text="Correo:", bg=COLORS["background"]).pack()
+        self.email_entry = tk.Entry(self, width=30)
+        self.email_entry.pack(pady=3)
+
+        # Campo de Telegram
+        tk.Label(self, fg=COLORS["primary"], text="Telegram:", bg=COLORS["background"]).pack()
+        self.telegram_entry = tk.Entry(self, width=30)
+        self.telegram_entry.pack(pady=3)
+
+        # Campo de contraseña
+        tk.Label(self, fg=COLORS["primary"], text="Contraseña:", bg=COLORS["background"]).pack()
+        self.password_entry = tk.Entry(self, show="*", width=30)
+        self.password_entry.pack(pady=3)
+
+        # Campo de confirmación de contraseña
+        tk.Label(self, fg=COLORS["primary"], text="Confirmar contraseña:", bg=COLORS["background"]).pack()
+        self.confirm_entry = tk.Entry(self, show="*", width=30)
+        self.confirm_entry.pack(pady=3)
+
+        # Reglas de contraseña
+        reglas = [
+            "• Mínimo 4 caracteres",
+            "• Al menos 1 letra mayúscula",
+            "• Incluir al menos 1 número"
+        ]
+        tk.Label(
+            self, 
+            text="Requisitos de la contraseña:", 
+            bg=COLORS["background"], 
+            fg=COLORS["primary"],
+            font=("Arial", 10, "bold")
+        ).pack(pady=8)
+        
+        for regla in reglas:
+            tk.Label(
+                self, 
+                text=regla, 
+                bg=COLORS["background"], 
+                fg=COLORS["accent"]
+            ).pack(anchor="w", padx=80)
+
+        # Botón de crear cuenta
+        tk.Button(
+            self, 
+            text="Crear cuenta", 
+            bg=COLORS["danger"], 
+            fg=COLORS["text_light"],
+            command=self._crear_cuenta
+        ).pack(pady=12)
+
+    def _crear_cuenta(self):
+        """Procesa la creación de cuenta (demo: no guarda datos reales)"""
+        # En una aplicación real, aquí se validarían y guardarían los datos
+        messagebox.showinfo("Cuenta", "Cuenta creada (demo). Volviendo al login.")
+        self.go_to_login()
