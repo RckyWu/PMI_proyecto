@@ -12,10 +12,11 @@ from .device_detail_window import DeviceDetailWindow
 class MainMenu(tk.Frame):
     """Frame principal con navegación por pestañas"""
     
-    def __init__(self, master, device_manager):
+    def __init__(self, master, device_manager, user_manager):
         super().__init__(master)
         self.master = master
         self.device_manager = device_manager
+        self.user_manager = user_manager  # ← NUEVO
         self.configure(bg=COLORS["background"])
 
         # Pestañas superiores
@@ -87,7 +88,8 @@ class MainMenu(tk.Frame):
 
         # Manejar caso especial de cerrar sesión
         if name == "Cerrar Sesión":
-            # Volver a login (master es App)
+            # Hacer logout y volver a login
+            self.user_manager.logout()  # ← NUEVO
             self.master.show_login()
             return
             

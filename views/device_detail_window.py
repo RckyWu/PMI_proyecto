@@ -286,6 +286,8 @@ class DeviceDetailWindow(tk.Toplevel):
         self._update_state_button()
         # Escribir en historial
         self._append_history(f"Estado cambiado a {'Activado' if self.active else 'Desactivado'}")
+            # Guardar cambios
+        self.device_manager.save_devices()
 
     def _update_state_button(self):
         """Actualiza la apariencia del botón de estado"""

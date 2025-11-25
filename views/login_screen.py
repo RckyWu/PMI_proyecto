@@ -3,17 +3,19 @@ Pantalla de inicio de sesión
 """
 
 import tkinter as tk
+from tkinter import messagebox
 from config import COLORS
 
 
 class LoginScreen(tk.Frame):
     """Frame para el inicio de sesión de usuarios"""
     
-    def __init__(self, master, go_to_register, go_to_menu):
+    def __init__(self, master, go_to_register, go_to_menu, user_manager):
         super().__init__(master)
         self.master = master
         self.go_to_register = go_to_register
         self.go_to_menu = go_to_menu
+        self.user_manager = user_manager  # ← NUEVO
         self.configure(bg=COLORS["background"])
 
         # Título
@@ -61,6 +63,17 @@ class LoginScreen(tk.Frame):
         ).pack(pady=5)
 
     def _iniciar_sesion(self):
-        """Procesa el inicio de sesión (demo: siempre permite acceso)"""
-        # En una aplicación real, aquí se validarían las credenciales
-        self.go_to_menu()
+        """Procesa el inicio de sesión validando contra JSON"""
+        email = self.email_entry.get().strip()
+        password = self.password_entry.get()
+        
+        if not email or not password:
+            messagebox.showwarning("Campos vacíos", "Por favor complete todos los campos")
+            return
+        
+        success, message = self.user_manager.login(email, password)
+        
+        if success:
+            self.go_to_menu()
+        else:
+            messagebox.showerror("Error", message)

@@ -10,10 +10,11 @@ from config import COLORS
 class RegisterScreen(tk.Frame):
     """Frame para el registro de nuevos usuarios"""
     
-    def __init__(self, master, go_to_login):
+    def __init__(self, master, go_to_login, user_manager):
         super().__init__(master)
         self.master = master
         self.go_to_login = go_to_login
+        self.user_manager = user_manager  # ← NUEVO
         self.configure(bg=COLORS["background"])
 
         # Título
@@ -77,7 +78,24 @@ class RegisterScreen(tk.Frame):
         ).pack(pady=12)
 
     def _crear_cuenta(self):
-        """Procesa la creación de cuenta (demo: no guarda datos reales)"""
-        # En una aplicación real, aquí se validarían y guardarían los datos
-        messagebox.showinfo("Cuenta", "Cuenta creada (demo). Volviendo al login.")
-        self.go_to_login()
+        """Procesa la creación de cuenta guardando en JSON"""
+        email = self.email_entry.get().strip()
+        telegram = self.telegram_entry.get().strip()
+        password = self.password_entry.get()
+        confirm = self.confirm_entry.get()
+        
+        if not email or not telegram or not password or not confirm:
+            messagebox.showwarning("Campos vacíos", "Por favor complete todos los campos")
+            return
+        
+        if password != confirm:
+            messagebox.showerror("Error", "Las contraseñas no coinciden")
+            return
+        
+        success, message = self.user_manager.register(email, password, telegram)
+        
+        if success:
+            messagebox.showinfo("Éxito", message)
+            self.go_to_login()
+        else:
+            messagebox.showerror("Error", message)
