@@ -7,6 +7,7 @@ import tkinter as tk
 from config import WINDOW_CONFIG, COLORS
 from models import DeviceManager, UserManager
 from views import SplashScreen, LoginScreen, RegisterScreen, MainMenu
+from controllers.serial_comm import init_serial, close_serial
 
 
 class App(tk.Tk):
@@ -22,6 +23,12 @@ class App(tk.Tk):
         # Gestores compartidos
         self.device_manager = DeviceManager()  # Sin archivo inicialmente
         self.user_manager = UserManager()
+        
+        # Inicializar comunicación serial
+        # Cambia "COM5" por tu puerto (ej: "/dev/ttyUSB0" en Linux/Mac)
+        self.serial_connected = init_serial(puerto="COM5", baud=115200)
+        if not self.serial_connected:
+            print("⚠ Advertencia: No se pudo conectar al puerto serial")
 
         # Inicialmente ocultar ventana principal para mostrar splash
         self.withdraw()
@@ -50,3 +57,8 @@ class App(tk.Tk):
             self.current_frame.destroy()
         self.current_frame = frame
         self.current_frame.pack(fill="both", expand=True)
+    
+    def destroy(self):
+        """Cierra la aplicación y la conexión serial"""
+        close_serial()
+        super().destroy()

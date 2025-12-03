@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, scrolledtext
 import time
 from config import COLORS, DAYS_OF_WEEK
+from controllers.serial_comm import get_serial_communicator
 
 
 class DeviceDetailWindow(tk.Toplevel):
@@ -31,6 +32,9 @@ class DeviceDetailWindow(tk.Toplevel):
         self.day_buttons = {}
         self.hour_buttons = {}
         self.active = device.get("active", False)
+        
+        # Comunicador serial
+        self.serial_comm = get_serial_communicator()
 
         # --- Scroll principal ---
         main_canvas = tk.Canvas(self, bg=COLORS["background"], highlightthickness=0)
@@ -137,6 +141,9 @@ class DeviceDetailWindow(tk.Toplevel):
             command=self._toggle_state
         )
         self.state_button.pack(pady=12)
+        
+        # --- Controles especiales según tipo de dispositivo ---
+        self._add_special_controls(content)
 
         # --- Historial específico ---
         tk.Label(
@@ -240,6 +247,75 @@ class DeviceDetailWindow(tk.Toplevel):
 
         # Aseguramos que el estado visual coincide con el dato inicial
         self._update_state_button()
+    
+    def _add_special_controls(self, parent):
+        """
+        Agrega controles especiales según el tipo de dispositivo.
+        - Cerradura: botones Abrir/Cerrar
+        - Simulador de Presencia: indicador de estado
+        """
+        tipo = self.device.get("tipo", "").lower()
+        
+        # --- CERRADURA ---
+        if "cerradura" in tipo or "llave" in tipo:
+            tk.Label(
+                parent, 
+                text="Control de Cerradura", 
+                bg=COLORS["background"],
+                font=("Arial", 13, "bold")
+            ).pack(pady=(10, 5))
+            
+            control_frame = tk.Frame(parent, bg=COLORS["background"])
+            control_frame.pack(pady=5)
+            
+            tk.Button(
+                control_frame,
+                text="🔓 ABRIR",
+                bg="#4CAF50",
+                fg="white",
+                font=("Arial", 12, "bold"),
+                width=12,
+                command=self._abrir_cerradura
+            ).pack(side="left", padx=10)
+            
+            tk.Button(
+                control_frame,
+                text="🔒 CERRAR",
+                bg="#f44336",
+                fg="white",
+                font=("Arial", 12, "bold"),
+                width=12,
+                command=self._cerrar_cerradura
+            ).pack(side="left", padx=10)
+            
+            # Indicador de estado
+            self.cerradura_estado = tk.Label(
+                parent,
+                text="Estado: Cerrada",
+                bg=COLORS["background"],
+                font=("Arial", 11),
+                fg="#666"
+            )
+            self.cerradura_estado.pack(pady=5)
+        
+        # --- SIMULADOR DE PRESENCIA ---
+        elif "simulador" in tipo or "presencia" in tipo:
+            tk.Label(
+                parent, 
+                text="💡 Simulador Activo", 
+                bg=COLORS["background"],
+                font=("Arial", 12, "bold"),
+                fg=COLORS["accent"]
+            ).pack(pady=10)
+            
+            tk.Label(
+                parent,
+                text="El simulador se activa automáticamente\ncuando el dispositivo está encendido",
+                bg=COLORS["background"],
+                font=("Arial", 10),
+                fg="#666",
+                justify="center"
+            ).pack(pady=5)
 
     # -----------------------
     # Utilidades (apariencia)
@@ -284,9 +360,36 @@ class DeviceDetailWindow(tk.Toplevel):
         self.active = not self.active
         self.device["active"] = self.active
         self._update_state_button()
+        
+        # Enviar comando al hardware vía serial
+        tipo_dispositivo = self.device.get("tipo", "").lower()
+        
+        # Mapeo de tipos a nombres de comando
+        mapeo_comandos = {
+            "sensor pir": "pir",
+            "sensor de humo": "humo",
+            "sensor de puerta": "puerta",
+            "sensor láser": "laser",
+            "botón de pánico": "panico",
+            "simulador de presencia": "presencia",
+        }
+        
+        comando = mapeo_comandos.get(tipo_dispositivo)
+        
+        if comando:
+            if self.active:
+                self.serial_comm.activar_dispositivo(comando)
+                mensaje = f"Estado cambiado a Activado - Comando enviado al hardware"
+            else:
+                self.serial_comm.desactivar_dispositivo(comando)
+                mensaje = f"Estado cambiado a Desactivado - Comando enviado al hardware"
+        else:
+            mensaje = f"Estado cambiado a {'Activado' if self.active else 'Desactivado'}"
+        
         # Escribir en historial
-        self._append_history(f"Estado cambiado a {'Activado' if self.active else 'Desactivado'}")
-            # Guardar cambios
+        self._append_history(mensaje)
+        
+        # Guardar cambios
         self.device_manager.save_devices()
 
     def _update_state_button(self):
@@ -325,6 +428,24 @@ class DeviceDetailWindow(tk.Toplevel):
             self.device_manager.delete_device(self.device)
             self.refresh_callback()
             self.destroy()
+    
+    def _abrir_cerradura(self):
+        """Envía comando para abrir la cerradura"""
+        if self.serial_comm.abrir_cerradura():
+            self._append_history("Comando enviado: ABRIR cerradura")
+            if hasattr(self, 'cerradura_estado'):
+                self.cerradura_estado.config(text="Estado: Abierta", fg="#4CAF50")
+        else:
+            messagebox.showwarning("Error", "No se pudo enviar el comando. Verifica la conexión serial.")
+    
+    def _cerrar_cerradura(self):
+        """Envía comando para cerrar la cerradura"""
+        if self.serial_comm.cerrar_cerradura():
+            self._append_history("Comando enviado: CERRAR cerradura")
+            if hasattr(self, 'cerradura_estado'):
+                self.cerradura_estado.config(text="Estado: Cerrada", fg="#f44336")
+        else:
+            messagebox.showwarning("Error", "No se pudo enviar el comando. Verifica la conexión serial.")
 
     def _on_close(self):
         """Cierra la ventana y actualiza la vista padre"""

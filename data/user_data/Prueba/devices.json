@@ -1,0 +1,12 @@
+{
+    "devices_by_zone": {
+        "DAS": [
+            {
+                "id": "DASA",
+                "tipo": "Camara_por_Fotogramas",
+                "zona": "DAS",
+                "active": false
+            }
+        ]
+    }
+}
