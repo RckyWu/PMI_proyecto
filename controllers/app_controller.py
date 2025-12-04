@@ -21,12 +21,6 @@ class App(tk.Tk):
 
         self.device_manager = DeviceManager()
         self.user_manager = UserManager()
-<<<<<<< HEAD
-
-=======
-        
-       
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
         self.serial_connected = init_serial(puerto="COM5", baud=115200)
         if not self.serial_connected:
             print("Advertencia: No se pudo conectar al puerto serial")

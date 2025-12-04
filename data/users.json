@@ -1,25 +1,5 @@
 {
-    "kjpl@gmail.com": {
-        "password": "5fdf54dc68d6348b46c269d4c190f407d74de4b657b3c88a6b96750d7cc3b5bd"
-    },
-    "wasd@gmail.com": {
-        "password": "62bbd4efb555b61995d354e69a4ced1ba410e02f4201dac907a013af17da2499"
-    },
-<<<<<<< HEAD
-    "Hi": {
-        "password": "35609703a09babf73663b32dec13ae37a2ab56087edfb534423f1412fb1cd05e"
-    },
-    "ron": {
-        "password": "9cb34f82a88b1c5744ba33858ad7071012ed2e679a89e1c160514a1ba3a62131"
-    },
-    "jose": {
-        "password": "3226ccd2e4ec61fe6b586003f239762a21a8579c943ab0d6398c51813f19918f"
-=======
-    "brandon.ep0908@gmail.com": {
-        "password": "9f3052d0370555b000b44b89e5092f82266c728539cc80a1e869b99be1ce0b23"
-    },
     "juanpablo@gmail.com": {
         "password": "85f7a3754a2406d8e248000a5ad04246fcaa4e4d399c5845486d300ec6c57ccb"
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
     }
 }

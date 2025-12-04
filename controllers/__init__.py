@@ -51,7 +51,6 @@ if HARDWARE_MESSAGES_AVAILABLE:
 # Importar módulos de hardware y comunicaciones solo si están disponibles
 try:
     from .device_listener import DeviceListener
-<<<<<<< HEAD
     from .BotMesajes import TelegramBot
     from .serial_comm import SerialCommunicator, get_serial_communicator, init_serial, close_serial
 
@@ -101,19 +100,3 @@ except ImportError as e:
 
 # Imprimir resumen de módulos disponibles
 print(f"Módulos disponibles: {', '.join(__all__)}")
-=======
-    __all__ = ['App', 'DeviceListener', 'SecurityController']
-except ImportError:
-    __all__ = ['App', 'SecurityController']
-    print("⚠️ DeviceListener no disponible (falta pyserial)")
-
-# Importar BotMesajes solo si está disponible
-try:
-    from .BotMesajes import TelegramBot
-    if 'DeviceListener' in __all__:
-        __all__ = ['App', 'DeviceListener', 'TelegramBot', 'SecurityController']
-    else:
-        __all__ = ['App', 'TelegramBot', 'SecurityController']
-except ImportError:
-    print("⚠️ TelegramBot no disponible (falta requests)")
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb

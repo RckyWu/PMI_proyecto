@@ -1,0 +1,12 @@
+{
+    "devices_by_zone": {
+        "CASA": [
+            {
+                "id": "DA",
+                "tipo": "Boton_de_Panico",
+                "zona": "CASA",
+                "active": false
+            }
+        ]
+    }
+}

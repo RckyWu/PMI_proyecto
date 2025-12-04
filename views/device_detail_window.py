@@ -11,11 +11,6 @@ from controllers.serial_comm import get_serial_communicator
 
 class DeviceDetailWindow(tk.Toplevel):
     """Ventana toplevel para mostrar y editar detalles de un dispositivo"""
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
     def __init__(self, master, device, device_manager, refresh_callback, tipos_list, security_controller=None):
         """
         Args:
@@ -38,11 +33,6 @@ class DeviceDetailWindow(tk.Toplevel):
         self.hour_buttons = {}
         self.active = device.get("active", False)
         self.security_controller = security_controller
-<<<<<<< HEAD
-
-=======
-        
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
         # Comunicador serial
         self.serial_comm = get_serial_communicator()
 
@@ -269,7 +259,6 @@ class DeviceDetailWindow(tk.Toplevel):
 
         # --- CERRADURA ---
         if "cerradura" in tipo or "llave" in tipo:
-<<<<<<< HEAD
             tk.Label(
                 parent,
                 text="Control de Cerradura",
@@ -311,9 +300,6 @@ class DeviceDetailWindow(tk.Toplevel):
             self.cerradura_estado.pack(pady=5)
 
         # --- SIMULADOR DE PRESENCIA ---
-=======
-            self._extracted_from__add_special_controls_11(parent)
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
         elif "simulador" in tipo or "presencia" in tipo:
             tk.Label(
                 parent,
@@ -427,12 +413,8 @@ class DeviceDetailWindow(tk.Toplevel):
         else:
             # Fallback: usar serial_comm directamente
             tipo_dispositivo = self.device.get("tipo", "").lower()
-<<<<<<< HEAD
 
             # Mapeo completo de tipos de dispositivos
-=======
-            
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
             mapeo_comandos = {
                 "sensor_de_movimiento_universal": "pir",
                 "detector_laser": "laser",
@@ -459,16 +441,11 @@ class DeviceDetailWindow(tk.Toplevel):
                 "sensor_laser": "laser",
                 "sensor_láser": "laser",
             }
-<<<<<<< HEAD
 
             # Obtener comando correspondiente
             comando = mapeo_comandos.get(tipo_dispositivo)
 
             if comando:
-=======
-            
-            if comando := mapeo_comandos.get(tipo_dispositivo):
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
                 if self.serial_comm is None:
                     mensaje = "Error: No hay conexión serial"
                 elif self.active:
@@ -478,10 +455,7 @@ class DeviceDetailWindow(tk.Toplevel):
                     self.serial_comm.desactivar_dispositivo(comando)
                     mensaje = "Estado cambiado a Desactivado - Comando enviado al hardware"
             else:
-<<<<<<< HEAD
                 # Dispositivos que no requieren comando serial (como cerraduras)
-=======
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
                 mensaje = f"Estado cambiado a {'Activado' if self.active else 'Desactivado'}"
 
         # Escribir en historial
@@ -538,22 +512,13 @@ class DeviceDetailWindow(tk.Toplevel):
             else:
                 messagebox.showwarning("Error", mensaje)
         else:
-<<<<<<< HEAD
             # Fallback al método original
             if self.serial_comm and self.serial_comm.abrir_cerradura():
-=======
-            if self.serial_comm.abrir_cerradura():
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
                 self._append_history("Comando enviado: ABRIR cerradura")
                 if hasattr(self, 'cerradura_estado'):
                     self.cerradura_estado.config(text="Estado: Abierta", fg="#4CAF50")
             else:
                 messagebox.showwarning("Error", "No se pudo enviar el comando. Verifica la conexión serial.")
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
     def _cerrar_cerradura(self):
         """Envía comando para cerrar la cerradura"""
         if self.security_controller:
@@ -565,12 +530,8 @@ class DeviceDetailWindow(tk.Toplevel):
             else:
                 messagebox.showwarning("Error", mensaje)
         else:
-<<<<<<< HEAD
             # Fallback al método original
             if self.serial_comm and self.serial_comm.cerrar_cerradura():
-=======
-            if self.serial_comm.cerrar_cerradura():
->>>>>>> fba6be52d8b889fdfabbfb0bc07aad75294216cb
                 self._append_history("Comando enviado: CERRAR cerradura")
                 if hasattr(self, 'cerradura_estado'):
                     self.cerradura_estado.config(text="Estado: Cerrada", fg="#f44336")
