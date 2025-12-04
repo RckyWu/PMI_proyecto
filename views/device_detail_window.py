@@ -12,7 +12,7 @@ from controllers.serial_comm import get_serial_communicator
 class DeviceDetailWindow(tk.Toplevel):
     """Ventana toplevel para mostrar y editar detalles de un dispositivo"""
     
-    def __init__(self, master, device, device_manager, refresh_callback, tipos_list):
+    def __init__(self, master, device, device_manager, refresh_callback, tipos_list, security_controller=None):
         """
         Args:
             master: widget padre (usualmente la app o el frame principal)
@@ -32,6 +32,7 @@ class DeviceDetailWindow(tk.Toplevel):
         self.day_buttons = {}
         self.hour_buttons = {}
         self.active = device.get("active", False)
+        self.security_controller = security_controller
         
         # Comunicador serial
         self.serial_comm = get_serial_communicator()
@@ -363,53 +364,54 @@ class DeviceDetailWindow(tk.Toplevel):
         self.device["active"] = self.active
         self._update_state_button()
 
-        # Enviar comando al hardware vía serial
-        tipo_dispositivo = self.device.get("tipo", "").lower()
-
-        # Mapeo de tipos a nombres de comando
-        mapeo_comandos = {
-            # === Nombres de TU sistema (encontrados en devices.json) ===
-            "sensor_de_movimiento_universal": "pir",
-            "detector_laser": "laser",
-            "detector_láser": "laser",
-            "boton_de_panico": "panico",
-            "botón_de_pánico": "panico",
-            "simulador_de_presencia": "presencia",
-            "alarma_silenciosa": "panico",  # Mismo hardware que pánico
-            "cerradura_inteligente": None,  # Se controla desde main_menu
-
-            # === Nombres originales (por compatibilidad) ===
-            "sensor pir": "pir",
-            "sensor de humo": "humo",
-            "sensor de puerta": "puerta",
-            "sensor láser": "laser",
-            "sensor laser": "laser",
-            "botón de pánico": "panico",
-            "boton de panico": "panico",
-            "simulador de presencia": "presencia",
-
-            # === Variaciones comunes ===
-            "sensor_de_humo": "humo",
-            "detector_de_humo": "humo",
-            "sensor_humo": "humo",
-            "sensor_de_puerta": "puerta",
-            "sensor_puerta": "puerta",
-            "reed_switch": "puerta",
-            "sensor_laser": "laser",
-            "sensor_láser": "laser",
-        }
-
-        if comando := mapeo_comandos.get(tipo_dispositivo):
-            if self.serial_comm is None:
-                mensaje = "Error: No hay conexión serial"
-            elif self.active:
-                self.serial_comm.activar_dispositivo(comando)
-                mensaje = "Estado cambiado a Activado - Comando enviado al hardware"
+        # Usar SecurityController si está disponible
+        if self.security_controller:
+            if self.active:
+                success, mensaje = self.security_controller.activate_device(self.device)
             else:
-                self.serial_comm.desactivar_dispositivo(comando)
-                mensaje = "Estado cambiado a Desactivado - Comando enviado al hardware"
+                success, mensaje = self.security_controller.deactivate_device(self.device)
         else:
-            mensaje = f"Estado cambiado a {'Activado' if self.active else 'Desactivado'}"
+            # Fallback: usar serial_comm directamente
+            tipo_dispositivo = self.device.get("tipo", "").lower()
+            
+            mapeo_comandos = {
+                "sensor_de_movimiento_universal": "pir",
+                "detector_laser": "laser",
+                "detector_láser": "laser",
+                "boton_de_panico": "panico",
+                "botón_de_pánico": "panico",
+                "simulador_de_presencia": "presencia",
+                "alarma_silenciosa": "panico",
+                "cerradura_inteligente": None,
+                "sensor pir": "pir",
+                "sensor de humo": "humo",
+                "sensor de puerta": "puerta",
+                "sensor láser": "laser",
+                "sensor laser": "laser",
+                "botón de pánico": "panico",
+                "boton de panico": "panico",
+                "simulador de presencia": "presencia",
+                "sensor_de_humo": "humo",
+                "detector_de_humo": "humo",
+                "sensor_humo": "humo",
+                "sensor_de_puerta": "puerta",
+                "sensor_puerta": "puerta",
+                "reed_switch": "puerta",
+                "sensor_laser": "laser",
+                "sensor_láser": "laser",
+            }
+            
+            if comando := mapeo_comandos.get(tipo_dispositivo):
+                if self.serial_comm is None:
+                    mensaje = "Error: No hay conexión serial"
+                elif self.active:
+                    self.serial_comm.activar_dispositivo(comando)
+                    mensaje = "Estado cambiado a Activado - Comando enviado al hardware"
+                else:
+                    self.serial_comm.desactivar_dispositivo(comando)
+                    mensaje = "Estado cambiado a Desactivado - Comando enviado al hardware"
+            else:
+                mensaje = f"Estado cambiado a {'Activado' if self.active else 'Desactivado'}"
 
         # Escribir en historial
         self._append_history(mensaje)
@@ -456,21 +458,39 @@ class DeviceDetailWindow(tk.Toplevel):
     
     def _abrir_cerradura(self):
         """Envía comando para abrir la cerradura"""
-        if self.serial_comm.abrir_cerradura():
-            self._append_history("Comando enviado: ABRIR cerradura")
-            if hasattr(self, 'cerradura_estado'):
-                self.cerradura_estado.config(text="Estado: Abierta", fg="#4CAF50")
+        if self.security_controller:
+            success, mensaje = self.security_controller.open_lock()
+            if success:
+                self._append_history(mensaje)
+                if hasattr(self, 'cerradura_estado'):
+                    self.cerradura_estado.config(text="Estado: Abierta", fg="#4CAF50")
+            else:
+                messagebox.showwarning("Error", mensaje)
         else:
-            messagebox.showwarning("Error", "No se pudo enviar el comando. Verifica la conexión serial.")
+            if self.serial_comm.abrir_cerradura():
+                self._append_history("Comando enviado: ABRIR cerradura")
+                if hasattr(self, 'cerradura_estado'):
+                    self.cerradura_estado.config(text="Estado: Abierta", fg="#4CAF50")
+            else:
+                messagebox.showwarning("Error", "No se pudo enviar el comando. Verifica la conexión serial.")
     
     def _cerrar_cerradura(self):
         """Envía comando para cerrar la cerradura"""
-        if self.serial_comm.cerrar_cerradura():
-            self._append_history("Comando enviado: CERRAR cerradura")
-            if hasattr(self, 'cerradura_estado'):
-                self.cerradura_estado.config(text="Estado: Cerrada", fg="#f44336")
+        if self.security_controller:
+            success, mensaje = self.security_controller.close_lock()
+            if success:
+                self._append_history(mensaje)
+                if hasattr(self, 'cerradura_estado'):
+                    self.cerradura_estado.config(text="Estado: Cerrada", fg="#f44336")
+            else:
+                messagebox.showwarning("Error", mensaje)
         else:
-            messagebox.showwarning("Error", "No se pudo enviar el comando. Verifica la conexión serial.")
+            if self.serial_comm.cerrar_cerradura():
+                self._append_history("Comando enviado: CERRAR cerradura")
+                if hasattr(self, 'cerradura_estado'):
+                    self.cerradura_estado.config(text="Estado: Cerrada", fg="#f44336")
+            else:
+                messagebox.showwarning("Error", "No se pudo enviar el comando. Verifica la conexión serial.")
 
     def _on_close(self):
         """Cierra la ventana y actualiza la vista padre"""
