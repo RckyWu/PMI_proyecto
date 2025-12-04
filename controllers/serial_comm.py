@@ -1,6 +1,6 @@
 """
-Modulo de comunicacion serial bidireccional con Raspberry Pi Pico
-Maneja envio de comandos y recepcion de eventos
+Módulo de comunicación serial bidireccional con Raspberry Pi Pico
+Maneja envío de comandos y recepción de eventos
 """
 
 import serial
@@ -11,9 +11,9 @@ import time
 
 class SerialCommunicator:
     """
-    Comunicacion bidireccional con Raspberry Pi Pico via UART.
+    Comunicación bidireccional con Raspberry Pi Pico vía UART.
     - Recibe eventos del hardware
-    - Envia comandos de activacion/desactivacion
+    - Envía comandos de activación/desactivación
     """
 
     def __init__(self, puerto="COM5", baud=115200):
@@ -26,29 +26,29 @@ class SerialCommunicator:
         self.connected = False
 
     def start(self):
-        """Inicia la conexion y el hilo de lectura."""
+        """Inicia la conexión y el hilo de lectura."""
         try:
             self.ser = serial.Serial(self.puerto, self.baud, timeout=1)
             self.connected = True
             self.running = True
             self.thread = threading.Thread(target=self._read_loop, daemon=True)
             self.thread.start()
-            print(f"Conectado a {self.puerto} @ {self.baud} baud")
+            print(f"✓ Conectado a {self.puerto} @ {self.baud} baud")
             return True
         except Exception as e:
-            print(f"Error al conectar: {e}")
+            print(f"✗ Error al conectar: {e}")
             self.connected = False
             return False
 
     def stop(self):
-        """Detiene la conexion serial."""
+        """Detiene la conexión serial."""
         self.running = False
         if self.thread:
             self.thread.join(timeout=1)
         if self.ser and self.ser.is_open:
             self.ser.close()
         self.connected = False
-        print("Conexion serial cerrada")
+        print("✓ Conexión serial cerrada")
 
     def _read_loop(self):
         """Ciclo de lectura en hilo separado."""
@@ -71,9 +71,9 @@ class SerialCommunicator:
 
     def send_command(self, comando):
         """
-        Envia un comando al Pico.
+        Envía un comando al Pico.
         Formato: CMD:ACCION:DISPOSITIVO
-
+        
         Ejemplos:
         - CMD:ACTIVAR:PIR
         - CMD:DESACTIVAR:HUMO
@@ -81,31 +81,31 @@ class SerialCommunicator:
         - CMD:CERRADURA:CERRAR
         """
         if not self.connected or not self.ser or not self.ser.is_open:
-            print(f"No conectado. Comando no enviado: {comando}")
+            print(f"✗ No conectado. Comando no enviado: {comando}")
             return False
-
+        
         try:
-            # Agregar salto de linea si no lo tiene
+            # Agregar salto de línea si no lo tiene
             if not comando.endswith('\n'):
                 comando += '\n'
-
+            
             self.ser.write(comando.encode())
-            print(f"Enviado: {comando.strip()}")
+            print(f"→ Enviado: {comando.strip()}")
             return True
         except Exception as e:
-            print(f"Error enviando comando: {e}")
+            print(f"✗ Error enviando comando: {e}")
             return False
 
     def activar_dispositivo(self, nombre):
         """
-        Envia comando para activar un dispositivo.
+        Envía comando para activar un dispositivo.
         nombre: "pir", "humo", "puerta", "laser", "panico", "presencia"
         """
         return self.send_command(f"CMD:ACTIVAR:{nombre.upper()}")
 
     def desactivar_dispositivo(self, nombre):
         """
-        Envia comando para desactivar un dispositivo.
+        Envía comando para desactivar un dispositivo.
         """
         return self.send_command(f"CMD:DESACTIVAR:{nombre.upper()}")
 
@@ -136,7 +136,7 @@ class SerialCommunicator:
             return None
 
     def is_connected(self):
-        """Retorna True si esta conectado."""
+        """Retorna True si está conectado."""
         return self.connected and self.ser and self.ser.is_open
 
 
@@ -146,7 +146,7 @@ _serial_comm = None
 
 def get_serial_communicator(puerto="COM5", baud=115200):
     """
-    Obtiene la instancia unica del comunicador serial.
+    Obtiene la instancia única del comunicador serial.
     Si no existe, la crea.
     """
     global _serial_comm
@@ -157,15 +157,15 @@ def get_serial_communicator(puerto="COM5", baud=115200):
 
 def init_serial(puerto="COM5", baud=115200):
     """
-    Inicializa la comunicacion serial.
-    Retorna True si se conecto correctamente.
+    Inicializa la comunicación serial.
+    Retorna True si se conectó correctamente.
     """
     comm = get_serial_communicator(puerto, baud)
     return comm.start()
 
 
 def close_serial():
-    """Cierra la conexion serial."""
+    """Cierra la conexión serial."""
     global _serial_comm
     if _serial_comm:
         _serial_comm.stop()

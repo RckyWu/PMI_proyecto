@@ -13,7 +13,7 @@
                 "id": "475",
                 "tipo": "Detector_Laser",
                 "zona": "a",
-                "active": false
+                "active": true
             },
             {
                 "id": "2424",
@@ -30,6 +30,12 @@
             {
                 "id": "32423423",
                 "tipo": "Boton_de_Panico",
+                "zona": "a",
+                "active": false
+            },
+            {
+                "id": "34534",
+                "tipo": "Detector_de_Placas",
                 "zona": "a",
                 "active": false
             }

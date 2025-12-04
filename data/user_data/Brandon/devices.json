@@ -1,0 +1,50 @@
+{
+    "devices_by_zone": {
+        "a": [
+            {
+                "id": "1234324",
+                "tipo": "Boton_de_Panico",
+                "zona": "a",
+                "active": true
+            },
+            {
+                "id": "23423423",
+                "tipo": "Camara_por_Fotogramas",
+                "zona": "a",
+                "active": true
+            },
+            {
+                "id": "4234234324",
+                "tipo": "Detector_de_Placas",
+                "zona": "a",
+                "active": true
+            },
+            {
+                "id": "424232",
+                "tipo": "Sensor_de_Movimiento_para_Entradas",
+                "zona": "a",
+                "active": false
+            },
+            {
+                "id": "42343243243",
+                "tipo": "Sensor_de_Movimiento_Universal",
+                "zona": "a",
+                "active": false
+            },
+            {
+                "id": "5325345",
+                "tipo": "Alarma_Silenciosa",
+                "zona": "a",
+                "active": false
+            }
+        ],
+        "b": [
+            {
+                "id": "24242432",
+                "tipo": "Cerradura_Inteligente",
+                "zona": "b",
+                "active": true
+            }
+        ]
+    }
+}

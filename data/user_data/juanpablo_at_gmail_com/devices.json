@@ -6,6 +6,12 @@
                 "tipo": "Boton_de_Panico",
                 "zona": "CASA",
                 "active": false
+            },
+            {
+                "id": "WQWQ",
+                "tipo": "Camara_por_Fotogramas",
+                "zona": "CASA",
+                "active": false
             }
         ]
     }

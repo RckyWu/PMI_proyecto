@@ -139,9 +139,9 @@ class DeviceEventHandler:
         """Crea mensaje para botón de pánico"""
         timestamp = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
 
-        message = f""" <b>EMERGENCIA - BOTON DE PANICO ACTIVADO</b>
+        message = f"""🚨 <b>EMERGENCIA - BOTON DE PANICO ACTIVADO</b>
 
- <b>Se requiere asistencia inmediata</b>
+⚠️ <b>Se requiere asistencia inmediata</b>
 
 <b>Informacion:</b>
 • Tipo: Botón de Pánico
@@ -152,7 +152,7 @@ class DeviceEventHandler:
         if data:
             message += f"\n• Datos: {data}"
 
-        message += "\n\n<b>Contactar al usuario inmediatamente</b>"
+        message += "\n\n<b>☎️ Contactar al usuario inmediatamente</b>"
 
         return message
 
@@ -163,7 +163,7 @@ class DeviceEventHandler:
         timestamp = datetime.now().strftime("%H:%M:%S %d/%m/%Y")
 
         # Crear mensaje básico
-        message = f""" <b>Notificacion del Sistema</b>
+        message = f"""🔔 <b>Notificacion del Sistema</b>
 
 <b>Dispositivo:</b> {device_name}
 <b>Evento:</b> {event_desc}

@@ -1,0 +1,18 @@
+{
+    "devices_by_zone": {
+        "casa": [
+            {
+                "id": "qq",
+                "tipo": "Camara_por_Fotogramas",
+                "zona": "casa",
+                "active": false
+            },
+            {
+                "id": "ww",
+                "tipo": "Boton_de_Panico",
+                "zona": "casa",
+                "active": false
+            }
+        ]
+    }
+}

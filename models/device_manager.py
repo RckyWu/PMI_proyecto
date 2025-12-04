@@ -13,25 +13,24 @@ class DeviceManager:
     devices_by_zone: { zona: [device_dict, ...] }
     cada device_dict: {"id": str, "tipo": str, "zona": str, "active": bool, ...}
     """
-
     def __init__(self, devices_file=None):
         self.devices_file = devices_file
         self.devices_by_zone = {}
-
+        
         # Si se proporciona un archivo, cargar datos
         if self.devices_file:
             self.load_devices()
-
+    
     def set_devices_file(self, file_path):
         """Establece el archivo de dispositivos y carga los datos"""
         self.devices_file = file_path
         self.load_devices()
-
+    
     def load_devices(self):
         """Carga dispositivos desde el archivo JSON"""
         if not self.devices_file:
             return
-
+        
         file_path = Path(self.devices_file)
         if file_path.exists():
             try:
@@ -42,12 +41,12 @@ class DeviceManager:
                 self.devices_by_zone = {}
         else:
             self.devices_by_zone = {}
-
+    
     def save_devices(self):
         """Guarda dispositivos en el archivo JSON"""
         if not self.devices_file:
             return
-
+        
         file_path = Path(self.devices_file)
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(

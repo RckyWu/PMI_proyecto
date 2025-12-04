@@ -1,5 +1,5 @@
 """
-Modulo de vistas de la aplicacion
+Módulo de vistas de la aplicación
 """
 
 from .splash_screen import SplashScreen
@@ -9,8 +9,9 @@ from .device_widget import DeviceWidget
 from .add_device_frame import AddDeviceFrame
 from .devices_frame import DevicesFrame
 from .device_detail_window import DeviceDetailWindow
-from .telegram_link_frame import TelegramLinkFrame
 from .main_menu import MainMenu
+from .telegram_link_frame import TelegramLinkFrame
+from .galeria_window import GaleriaWindow
 
 __all__ = [
     'SplashScreen',
@@ -20,6 +21,7 @@ __all__ = [
     'AddDeviceFrame',
     'DevicesFrame',
     'DeviceDetailWindow',
-    'TelegramLinkFrame',
     'MainMenu'
+    'TelegramLinkFrame',  
+    'GaleriaWindow' 
 ]
