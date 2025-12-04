@@ -14,11 +14,11 @@ from views.device_detail_window import DeviceDetailWindow
 
 # Importar controladores para Raspberry Pi y Telegram
 try:
-    from controllers.device_listener import DeviceListener
+    from controllers.serial_comm import get_serial_communicator
     SERIAL_AVAILABLE = True
 except ImportError:
     SERIAL_AVAILABLE = False
-    print("⚠️ device_listener no disponible. Conexión con Raspberry Pi deshabilitada.")
+    print("⚠️ serial_comm no disponible. Conexión con Raspberry Pi deshabilitada.")
 
 try:
     from controllers.BotMesajes import TelegramBot
@@ -39,7 +39,7 @@ class MainMenu(tk.Frame):
         self.configure(bg=COLORS["background"])
         
         # Inicializar componentes de comunicación
-        self.device_listener = None
+        self.serial_comm = None
         self.telegram_bot = None
         self._init_communications()
 
@@ -92,7 +92,7 @@ class MainMenu(tk.Frame):
         self.frames["Configuración"] = self._create_config_frame()
 
         # Iniciar procesamiento de mensajes del Raspberry Pi
-        if SERIAL_AVAILABLE and self.device_listener:
+        if SERIAL_AVAILABLE and self.serial_comm:
             self._process_device_messages()
 
         self.select_tab("Dispositivos")
@@ -100,20 +100,18 @@ class MainMenu(tk.Frame):
     def _init_communications(self):
         """Inicializa las comunicaciones con Raspberry Pi y Telegram"""
         
-        # Inicializar listener del Raspberry Pi
+        # Usar el SerialCommunicator global que ya está inicializado en app_controller
         if SERIAL_AVAILABLE:
             try:
-                # Configurar puerto (puede cambiarse en config)
-                puerto = "COM5"  # Windows
-                # puerto = "/dev/ttyUSB0"  # Linux/Raspberry Pi
-                # puerto = "/dev/tty.usbserial"  # macOS
-                
-                self.device_listener = DeviceListener(puerto=puerto, baud=115200)
-                self.device_listener.start()
-                print(f"✅ Listener iniciado en {puerto}")
+                self.serial_comm = get_serial_communicator()
+                if self.serial_comm.is_connected():
+                    print(f"✅ Usando conexión serial compartida en COM5")
+                else:
+                    print(f"⚠️ SerialCommunicator no está conectado")
+                    self.serial_comm = None
             except Exception as e:
-                print(f"❌ Error iniciando device_listener: {e}")
-                self.device_listener = None
+                print(f"❌ Error obteniendo serial_comm: {e}")
+                self.serial_comm = None
         
         # Inicializar bot de Telegram
         if TELEGRAM_AVAILABLE:
@@ -136,13 +134,13 @@ class MainMenu(tk.Frame):
     
     def _process_device_messages(self):
         """Procesa mensajes del Raspberry Pi periódicamente"""
-        if not self.device_listener:
+        if not self.serial_comm:
             return
         
         try:
-            # Procesar todos los mensajes disponibles
-            while not self.device_listener.queue.empty():
-                mensaje = self.device_listener.queue.get_nowait()
+            # Obtener evento del SerialCommunicator
+            mensaje = self.serial_comm.get_event()
+            if mensaje:
                 self._handle_device_event(mensaje)
         except Exception as e:
             print(f"Error procesando mensajes: {e}")
@@ -155,29 +153,52 @@ class MainMenu(tk.Frame):
         print(f"📨 Mensaje recibido: {mensaje}")
 
         # Detectar errores del serial
-        if "ERROR_SERIAL" in mensaje:
-            print("⚠️ Error de comunicación serial")
+        if "ERROR_SERIAL" in mensaje or mensaje.startswith("ERROR:"):
+            print(f"⚠️ Error de comunicación: {mensaje}")
+            return
+        
+        # Ignorar mensajes de sistema
+        if mensaje.startswith("SYSTEM:") or mensaje.startswith("SENSORES:") or mensaje.startswith("HEARTBEAT:"):
+            return
+        
+        # Ignorar respuestas OK (ya se procesan en otro lugar)
+        if mensaje.startswith("OK:"):
             return
 
-        # Parsear mensaje (formato esperado: "DEVICE_ID:EVENT_TYPE:DATA")
+        # Parsear eventos (formato: "EVENT:TIPO:ESTADO" o "EVENT:TIPO")
         try:
             parts = mensaje.split(":")
-            if len(parts) >= 2:
-                device_id = parts[0]
-                event_type = parts[1]
-                data = ":".join(parts[2:]) if len(parts) > 2 else ""
+            
+            if len(parts) >= 2 and parts[0] == "EVENT":
+                event_type = parts[1]  # PIR, HUMO, PUERTA, LASER, PANICO, SILENCIO, CERRADURA
+                event_state = parts[2] if len(parts) > 2 else ""
 
                 # Procesar según tipo de evento
-                if event_type == "MOTION":
-                    self._handle_motion_event(device_id, data)
-                elif event_type == "ALARM":
-                    self._handle_alarm_event(device_id, data)
-                elif event_type == "SMOKE":
-                    self._handle_smoke_event(device_id, data)
-                elif event_type == "STATUS":
-                    self._handle_status_update(device_id, data)
+                if event_type == "PIR":
+                    self._handle_motion_event("Sensor PIR", event_state)
+                    
+                elif event_type == "HUMO":
+                    self._handle_smoke_event("Detector de Humo", event_state)
+                    
+                elif event_type == "PANICO":
+                    self._handle_alarm_event("Botón de Pánico", event_state)
+                    
+                elif event_type == "SILENCIO":
+                    self._handle_alarm_event("Alarma Silenciosa", event_state)
+                    
+                elif event_type == "PUERTA":
+                    self._handle_door_event(event_state)
+                    
+                elif event_type == "LASER":
+                    self._handle_laser_event(event_state)
+                    
+                elif event_type == "CERRADURA":
+                    self._handle_lock_event(event_state)
+                    
                 else:
                     print(f"Tipo de evento desconocido: {event_type}")
+            else:
+                print(f"Formato de mensaje no reconocido: {mensaje}")
 
         except Exception as e:
             print(f"Error parseando mensaje: {e}")
@@ -228,6 +249,49 @@ class MainMenu(tk.Frame):
         print(f"📊 Actualización de estado: {device_id} - {data}")
         # Actualizar estado en device_manager si es necesario
     
+    def _handle_door_event(self, state):
+        """Maneja evento de puerta/ventana"""
+        if state == "ABIERTA":
+            mensaje = "🚪 Puerta/Ventana ABIERTA"
+            print(mensaje)
+            if self.telegram_bot and self.user_manager.current_user:
+                self.telegram_bot.send_message_to_user(
+                    self.user_manager.current_user,
+                    f"🚪 <b>Alerta de Acceso</b>\n\n{mensaje}",
+                    parse_mode='HTML'
+                )
+            messagebox.showwarning("Alerta de Acceso", mensaje)
+        elif state == "CERRADA":
+            print("🚪 Puerta/Ventana cerrada")
+    
+    def _handle_laser_event(self, state):
+        """Maneja evento de láser"""
+        if state == "INTERRUMPIDO":
+            mensaje = "🔴 Perímetro láser INTERRUMPIDO"
+            print(mensaje)
+            if self.telegram_bot and self.user_manager.current_user:
+                self.telegram_bot.send_message_to_user(
+                    self.user_manager.current_user,
+                    f"🔴 <b>Alerta de Seguridad</b>\n\n{mensaje}",
+                    parse_mode='HTML'
+                )
+            messagebox.showwarning("Alerta de Seguridad", mensaje)
+        elif state == "OK":
+            print("🟢 Perímetro láser OK")
+    
+    def _handle_lock_event(self, state):
+        """Maneja evento de cerradura"""
+        estados = {
+            "ABRIENDO": "🔓 Abriendo cerradura...",
+            "ABIERTA": "🔓 Cerradura ABIERTA",
+            "CERRANDO": "🔒 Cerrando cerradura...",
+            "CERRADA": "🔒 Cerradura CERRADA",
+            "YA_ABIERTA": "🔓 Cerradura ya estaba abierta",
+            "YA_CERRADA": "🔒 Cerradura ya estaba cerrada"
+        }
+        mensaje = estados.get(state, f"Cerradura: {state}")
+        print(mensaje)
+    
     def _create_config_frame(self):
         """Crea el frame de configuración"""
         config_frame = tk.Frame(self.content, bg=COLORS["background"])
@@ -275,7 +339,7 @@ class MainMenu(tk.Frame):
         status_frame.pack(pady=20, padx=20, fill="x")
 
         # Estado Raspberry Pi
-        serial_status = "✅ Conectado" if (SERIAL_AVAILABLE and self.device_listener) else "❌ Desconectado"
+        serial_status = "✅ Conectado" if (SERIAL_AVAILABLE and self.serial_comm) else "❌ Desconectado"
         tk.Label(
             status_frame,
             text=f"Raspberry Pi: {serial_status}",
@@ -358,13 +422,9 @@ class MainMenu(tk.Frame):
 
         # Manejar caso especial de cerrar sesión
         if name == "Cerrar Sesión":
-            # Detener listener si está activo
-            if self.device_listener:
-                try:
-                    self.device_listener.stop()
-                    print("🛑 Device listener detenido")
-                except:
-                    pass
+            # Ya no necesitamos detener el serial_comm aquí
+            # porque es un singleton global que se mantiene activo
+            # y se cierra solo cuando se cierra la aplicación completa
             
             # Hacer logout y volver a login
             self.user_manager.logout()
@@ -402,11 +462,8 @@ class MainMenu(tk.Frame):
     
     def destroy(self):
         """Limpieza al destruir el widget"""
-        # Detener device listener
-        if self.device_listener:
-            try:
-                self.device_listener.stop()
-            except:
-                pass
+        # El serial_comm es un singleton global
+        # No lo cerramos aquí porque puede estar siendo usado por otras partes
+        # Se cierra automáticamente en app_controller cuando se cierra la app
         
         super().destroy()

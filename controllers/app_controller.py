@@ -24,8 +24,7 @@ class App(tk.Tk):
         self.device_manager = DeviceManager()  # Sin archivo inicialmente
         self.user_manager = UserManager()
         
-        # Inicializar comunicación serial
-        # Cambia "COM5" por tu puerto (ej: "/dev/ttyUSB0" en Linux/Mac)
+       
         self.serial_connected = init_serial(puerto="COM5", baud=115200)
         if not self.serial_connected:
             print("⚠ Advertencia: No se pudo conectar al puerto serial")
