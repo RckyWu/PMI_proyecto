@@ -1,0 +1,5 @@
+=== REGISTRO DE TODAS LAS PLACAS ===
+Creado: 2025-12-04 03:19:09
+
+FORMATO: PLACA | FECHA | HORA | ARCHIVO
+------------------------------------------------------------
