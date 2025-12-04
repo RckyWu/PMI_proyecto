@@ -10,6 +10,14 @@ import webbrowser
 from pathlib import Path
 from config import COLORS
 
+# Intentar importar PIL para cargar imágenes PNG
+try:
+    from PIL import Image, ImageTk
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    print("Advertencia: PIL no disponible. Instalar con: pip install Pillow")
+
 
 class TelegramLinkFrame(tk.Frame):
     """Frame para vincular cuenta de Telegram con el sistema"""
@@ -95,22 +103,50 @@ class TelegramLinkFrame(tk.Frame):
         qr_container = tk.Frame(qr_frame, bg="white")
         qr_container.pack(pady=5)
 
-        # Buscar imagen QR.ppm
-        qr_path = Path("QR.ppm")
+        # Buscar imagen QR.png (o QR.ppm como fallback)
+        qr_png_path = Path(__file__).parent.parent / "QR.png"
+        qr_ppm_path = Path(__file__).parent.parent / "QR.ppm"
+        
+        # También buscar en el directorio actual por si acaso
+        if not qr_png_path.exists():
+            qr_png_path = Path("QR.png")
+        if not qr_ppm_path.exists():
+            qr_ppm_path = Path("QR.ppm")
 
-        if qr_path.exists():
+        qr_loaded = False
+        
+        # Intentar cargar PNG con PIL
+        if qr_png_path.exists() and PIL_AVAILABLE:
             try:
-                # Cargar imagen QR PPM con Tkinter
-                qr_photo = tk.PhotoImage(file=str(qr_path))
+                # Cargar imagen PNG con PIL
+                pil_image = Image.open(str(qr_png_path))
+                
+                # Redimensionar si es muy grande
+                max_size = 150
+                if pil_image.width > max_size or pil_image.height > max_size:
+                    pil_image.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                
+                # Convertir a PhotoImage de Tkinter
+                qr_photo = ImageTk.PhotoImage(pil_image)
+
+                qr_label = tk.Label(qr_container, image=qr_photo, bg="white")
+                qr_label.image = qr_photo  # Mantener referencia
+                qr_label.pack()
+                qr_loaded = True
+                print(f"QR.png cargado correctamente desde: {qr_png_path}")
+
+            except Exception as e:
+                print(f"Error cargando QR.png: {e}")
+        
+        # Fallback: intentar cargar PPM si PNG no funcionó
+        if not qr_loaded and qr_ppm_path.exists():
+            try:
+                qr_photo = tk.PhotoImage(file=str(qr_ppm_path))
 
                 # Reducir tamaño si es muy grande
                 img_width = qr_photo.width()
-                img_height = qr_photo.height()
+                max_size = 150
 
-                # Limitar tamaño máximo para que quepa bien
-                max_size = 130
-
-                # Intentar reducir usando subsample si es necesario
                 if img_width > max_size:
                     factor = 2 if img_width > max_size * 2 else 1
                     qr_photo = qr_photo.subsample(factor, factor)
@@ -118,13 +154,20 @@ class TelegramLinkFrame(tk.Frame):
                 qr_label = tk.Label(qr_container, image=qr_photo, bg="white")
                 qr_label.image = qr_photo
                 qr_label.pack()
+                qr_loaded = True
+                print(f"QR.ppm cargado correctamente desde: {qr_ppm_path}")
 
             except Exception as e:
                 print(f"Error cargando QR.ppm: {e}")
-                self._create_qr_fallback(qr_container)
-        else:
+        
+        # Si no se pudo cargar ninguna imagen, mostrar fallback
+        if not qr_loaded:
             self._create_qr_fallback(qr_container)
-            print("Archivo QR.ppm no encontrado")
+            if not PIL_AVAILABLE:
+                print("PIL no disponible. Instala Pillow: pip install Pillow")
+            else:
+                print(f"No se encontró QR.png en: {qr_png_path}")
+                print(f"No se encontró QR.ppm en: {qr_ppm_path}")
 
         # Nombre del bot
         tk.Label(
