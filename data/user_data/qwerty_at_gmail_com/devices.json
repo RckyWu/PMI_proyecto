@@ -1,0 +1,12 @@
+{
+    "devices_by_zone": {
+        "CASA": [
+            {
+                "id": "ASA",
+                "tipo": "Camara_por_Fotogramas",
+                "zona": "CASA",
+                "active": false
+            }
+        ]
+    }
+}

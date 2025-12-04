@@ -79,14 +79,9 @@ class MainMenu(tk.Frame):
             self.device_manager
         )
         
-        # Historial placeholder
-        self.frames["Historial"] = tk.Frame(self.content, bg=COLORS["background"])
-        tk.Label(
-            self.frames["Historial"], 
-            text="Historial general", 
-            bg=COLORS["background"],
-            font=("Arial", 14, "bold")
-        ).pack(pady=20)
+        # Historial de eventos
+        self.frames["Historial"] = self._create_history_frame()
+        
         
         # Configuración frame
         self.frames["Configuración"] = self._create_config_frame()
@@ -107,10 +102,18 @@ class MainMenu(tk.Frame):
                 if self.serial_comm.is_connected():
                     print(f"✅ Usando conexión serial compartida en COM5")
                 else:
-                    print(f"⚠️ SerialCommunicator no está conectado")
-                    self.serial_comm = None
+                    print(f"⚠️ SerialCommunicator existe pero no está conectado")
+                    print(f"   Intentando conectar...")
+                    # Intentar conectar si no está conectado
+                    if self.serial_comm.start():
+                        print(f"✅ Conexión establecida")
+                    else:
+                        print(f"❌ No se pudo conectar")
+                        # NO poner en None, dejar el objeto por si conecta después
             except Exception as e:
                 print(f"❌ Error obteniendo serial_comm: {e}")
+                import traceback
+                traceback.print_exc()
                 self.serial_comm = None
         
         # Inicializar bot de Telegram
@@ -140,8 +143,10 @@ class MainMenu(tk.Frame):
         try:
             # Obtener evento del SerialCommunicator
             mensaje = self.serial_comm.get_event()
+            
             if mensaje:
                 self._handle_device_event(mensaje)
+                
         except Exception as e:
             print(f"Error procesando mensajes: {e}")
         
@@ -205,16 +210,30 @@ class MainMenu(tk.Frame):
     
     def _handle_motion_event(self, device_id, data):
         """Maneja evento de sensor de movimiento"""
-        self._extracted_from__handle_smoke_event_3(
-            '🚶 Movimiento detectado en ',
-            device_id,
-            '🔔 <b>Sensor de Movimiento</b>\n\n',
-        )
+        mensaje = f"🚶 Movimiento detectado en {device_id}"
+        print(mensaje)
+        
+        # Agregar al historial
+        self._add_to_history(mensaje, "pir")
+        
+        # Notificación por Telegram
+        if self.telegram_bot and self.user_manager.current_user:
+            self.telegram_bot.send_message_to_user(
+                self.user_manager.current_user,
+                f"🔔 <b>Sensor de Movimiento</b>\n\n{mensaje}",
+                parse_mode='HTML'
+            )
+        
+        # Mostrar alerta visual
+        messagebox.showinfo("Sensor de Movimiento", mensaje)
     
     def _handle_alarm_event(self, device_id, data):
         """Maneja evento de alarma"""
         mensaje = f"🚨 ALARMA activada en {device_id}"
         print(mensaje)
+        
+        # Agregar al historial
+        self._add_to_history(mensaje, "panico")
         
         # Notificación urgente por Telegram
         if self.telegram_bot and self.user_manager.current_user:
@@ -229,20 +248,22 @@ class MainMenu(tk.Frame):
     
     def _handle_smoke_event(self, device_id, data):
         """Maneja evento de detector de humo"""
-        self._extracted_from__handle_smoke_event_3(
-            '💨 Humo detectado en ', device_id, '⚠️ <b>Detector de Humo</b>\n\n'
-        )
-
-    # TODO Rename this here and in `_handle_motion_event` and `_handle_smoke_event`
-    def _extracted_from__handle_smoke_event_3(self, arg0, device_id, arg2):
-        mensaje = f"{arg0}{device_id}"
+        mensaje = f"💨 Humo detectado en {device_id}"
         print(mensaje)
+        
+        # Agregar al historial
+        self._add_to_history(mensaje, "humo")
+        
+        # Notificación por Telegram
         if self.telegram_bot and self.user_manager.current_user:
             self.telegram_bot.send_message_to_user(
                 self.user_manager.current_user,
-                f"{arg2}{mensaje}\n\nDispositivo: {device_id}",
-                parse_mode='HTML',
+                f"⚠️ <b>Detector de Humo</b>\n\n{mensaje}",
+                parse_mode='HTML'
             )
+        
+        # Mostrar alerta visual
+        messagebox.showwarning("Detector de Humo", mensaje)
     
     def _handle_status_update(self, device_id, data):
         """Maneja actualización de estado de dispositivo"""
@@ -254,6 +275,10 @@ class MainMenu(tk.Frame):
         if state == "ABIERTA":
             mensaje = "🚪 Puerta/Ventana ABIERTA"
             print(mensaje)
+            
+            # Agregar al historial
+            self._add_to_history(mensaje, "puerta")
+            
             if self.telegram_bot and self.user_manager.current_user:
                 self.telegram_bot.send_message_to_user(
                     self.user_manager.current_user,
@@ -262,13 +287,19 @@ class MainMenu(tk.Frame):
                 )
             messagebox.showwarning("Alerta de Acceso", mensaje)
         elif state == "CERRADA":
-            print("🚪 Puerta/Ventana cerrada")
+            mensaje = "🚪 Puerta/Ventana cerrada"
+            print(mensaje)
+            self._add_to_history(mensaje, "puerta")
     
     def _handle_laser_event(self, state):
         """Maneja evento de láser"""
         if state == "INTERRUMPIDO":
             mensaje = "🔴 Perímetro láser INTERRUMPIDO"
             print(mensaje)
+            
+            # Agregar al historial
+            self._add_to_history(mensaje, "laser")
+            
             if self.telegram_bot and self.user_manager.current_user:
                 self.telegram_bot.send_message_to_user(
                     self.user_manager.current_user,
@@ -277,7 +308,9 @@ class MainMenu(tk.Frame):
                 )
             messagebox.showwarning("Alerta de Seguridad", mensaje)
         elif state == "OK":
-            print("🟢 Perímetro láser OK")
+            mensaje = "🟢 Perímetro láser OK"
+            print(mensaje)
+            self._add_to_history(mensaje, "laser")
     
     def _handle_lock_event(self, state):
         """Maneja evento de cerradura"""
@@ -291,6 +324,139 @@ class MainMenu(tk.Frame):
         }
         mensaje = estados.get(state, f"Cerradura: {state}")
         print(mensaje)
+        
+        # Agregar al historial
+        self._add_to_history(mensaje, "cerradura")
+    
+    def _create_history_frame(self):
+        """Crea el frame de historial de eventos"""
+        from tkinter import scrolledtext
+        from datetime import datetime
+        
+        history_frame = tk.Frame(self.content, bg=COLORS["background"])
+        
+        # Título
+        tk.Label(
+            history_frame,
+            text="📋 Historial de Eventos",
+            bg=COLORS["background"],
+            fg=COLORS["primary"],
+            font=("Arial", 16, "bold")
+        ).pack(pady=20)
+        
+        # Botones de control
+        button_frame = tk.Frame(history_frame, bg=COLORS["background"])
+        button_frame.pack(pady=10)
+        
+        tk.Button(
+            button_frame,
+            text="🗑️ Limpiar Historial",
+            bg=COLORS["danger"],
+            fg="white",
+            font=("Arial", 10, "bold"),
+            relief="flat",
+            padx=15,
+            pady=5,
+            command=self._clear_history
+        ).pack(side="left", padx=5)
+        
+        tk.Button(
+            button_frame,
+            text="💾 Exportar",
+            bg=COLORS["accent"],
+            fg="white",
+            font=("Arial", 10, "bold"),
+            relief="flat",
+            padx=15,
+            pady=5,
+            command=self._export_history
+        ).pack(side="left", padx=5)
+        
+        # Área de texto con scroll
+        self.history_text = scrolledtext.ScrolledText(
+            history_frame,
+            width=80,
+            height=20,
+            bg="#ffffff",
+            fg=COLORS["text_dark"],
+            font=("Consolas", 10),
+            wrap=tk.WORD,
+            relief="solid",
+            borderwidth=1
+        )
+        self.history_text.pack(pady=10, padx=20, fill="both", expand=True)
+        
+        # Configurar tags para colores
+        self.history_text.tag_config("timestamp", foreground="#666666")
+        self.history_text.tag_config("pir", foreground="#2196F3")
+        self.history_text.tag_config("humo", foreground="#FF5722")
+        self.history_text.tag_config("panico", foreground="#F44336")
+        self.history_text.tag_config("puerta", foreground="#FF9800")
+        self.history_text.tag_config("laser", foreground="#9C27B0")
+        self.history_text.tag_config("cerradura", foreground="#4CAF50")
+        self.history_text.tag_config("sistema", foreground="#00BCD4")
+        
+        # Deshabilitar edición
+        self.history_text.config(state="disabled")
+        
+        # Agregar mensaje inicial
+        self._add_to_history("Sistema iniciado", "sistema")
+        
+        return history_frame
+    
+    def _add_to_history(self, mensaje, tipo="sistema"):
+        """Agrega un mensaje al historial"""
+        from datetime import datetime
+        
+        if not hasattr(self, 'history_text'):
+            return
+        
+        # Obtener timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Habilitar edición temporalmente
+        self.history_text.config(state="normal")
+        
+        # Agregar timestamp
+        self.history_text.insert("end", f"[{timestamp}] ", "timestamp")
+        
+        # Agregar mensaje con color según tipo
+        self.history_text.insert("end", f"{mensaje}\n", tipo)
+        
+        # Auto-scroll al final
+        self.history_text.see("end")
+        
+        # Deshabilitar edición
+        self.history_text.config(state="disabled")
+    
+    def _clear_history(self):
+        """Limpia el historial"""
+        if messagebox.askyesno("Confirmar", "¿Deseas limpiar todo el historial?"):
+            self.history_text.config(state="normal")
+            self.history_text.delete("1.0", "end")
+            self.history_text.config(state="disabled")
+            self._add_to_history("Historial limpiado", "sistema")
+    
+    def _export_history(self):
+        """Exporta el historial a un archivo"""
+        from tkinter import filedialog
+        from datetime import datetime
+        
+        # Pedir ubicación del archivo
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".txt",
+            filetypes=[("Archivo de texto", "*.txt"), ("Todos los archivos", "*.*")],
+            initialfile=f"historial_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        )
+        
+        if filename:
+            try:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    content = self.history_text.get("1.0", "end")
+                    f.write(content)
+                messagebox.showinfo("Éxito", f"Historial exportado a:\n{filename}")
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo exportar el historial:\n{e}")
     
     def _create_config_frame(self):
         """Crea el frame de configuración"""

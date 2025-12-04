@@ -1,0 +1,46 @@
+{
+    "devices_by_zone": {
+        "patio": [
+            {
+                "id": "346436",
+                "tipo": "Cerradura_Inteligente",
+                "zona": "patio",
+                "active": true
+            }
+        ],
+        "a": [
+            {
+                "id": "475",
+                "tipo": "Detector_Laser",
+                "zona": "a",
+                "active": false
+            },
+            {
+                "id": "2424",
+                "tipo": "Alarma_Silenciosa",
+                "zona": "a",
+                "active": true
+            },
+            {
+                "id": "242423",
+                "tipo": "Sensor_de_Movimiento_Universal",
+                "zona": "a",
+                "active": false
+            },
+            {
+                "id": "32423423",
+                "tipo": "Boton_de_Panico",
+                "zona": "a",
+                "active": false
+            }
+        ],
+        "2": [
+            {
+                "id": "2332",
+                "tipo": "Simulador_de_Presencia",
+                "zona": "2",
+                "active": false
+            }
+        ]
+    }
+}

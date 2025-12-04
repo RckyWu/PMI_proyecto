@@ -255,50 +255,10 @@ class DeviceDetailWindow(tk.Toplevel):
         - Simulador de Presencia: indicador de estado
         """
         tipo = self.device.get("tipo", "").lower()
-        
+
         # --- CERRADURA ---
         if "cerradura" in tipo or "llave" in tipo:
-            tk.Label(
-                parent, 
-                text="Control de Cerradura", 
-                bg=COLORS["background"],
-                font=("Arial", 13, "bold")
-            ).pack(pady=(10, 5))
-            
-            control_frame = tk.Frame(parent, bg=COLORS["background"])
-            control_frame.pack(pady=5)
-            
-            tk.Button(
-                control_frame,
-                text="🔓 ABRIR",
-                bg="#4CAF50",
-                fg="white",
-                font=("Arial", 12, "bold"),
-                width=12,
-                command=self._abrir_cerradura
-            ).pack(side="left", padx=10)
-            
-            tk.Button(
-                control_frame,
-                text="🔒 CERRAR",
-                bg="#f44336",
-                fg="white",
-                font=("Arial", 12, "bold"),
-                width=12,
-                command=self._cerrar_cerradura
-            ).pack(side="left", padx=10)
-            
-            # Indicador de estado
-            self.cerradura_estado = tk.Label(
-                parent,
-                text="Estado: Cerrada",
-                bg=COLORS["background"],
-                font=("Arial", 11),
-                fg="#666"
-            )
-            self.cerradura_estado.pack(pady=5)
-        
-        # --- SIMULADOR DE PRESENCIA ---
+            self._extracted_from__add_special_controls_11(parent)
         elif "simulador" in tipo or "presencia" in tipo:
             tk.Label(
                 parent, 
@@ -307,7 +267,7 @@ class DeviceDetailWindow(tk.Toplevel):
                 font=("Arial", 12, "bold"),
                 fg=COLORS["accent"]
             ).pack(pady=10)
-            
+
             tk.Label(
                 parent,
                 text="El simulador se activa automáticamente\ncuando el dispositivo está encendido",
@@ -316,6 +276,48 @@ class DeviceDetailWindow(tk.Toplevel):
                 fg="#666",
                 justify="center"
             ).pack(pady=5)
+
+    # TODO Rename this here and in `_add_special_controls`
+    def _extracted_from__add_special_controls_11(self, parent):
+        tk.Label(
+            parent, 
+            text="Control de Cerradura", 
+            bg=COLORS["background"],
+            font=("Arial", 13, "bold")
+        ).pack(pady=(10, 5))
+
+        control_frame = tk.Frame(parent, bg=COLORS["background"])
+        control_frame.pack(pady=5)
+
+        tk.Button(
+            control_frame,
+            text="� ABRIR",
+            bg="#4CAF50",
+            fg="white",
+            font=("Arial", 12, "bold"),
+            width=12,
+            command=self._abrir_cerradura
+        ).pack(side="left", padx=10)
+
+        tk.Button(
+            control_frame,
+            text="🔒 CERRAR",
+            bg="#f44336",
+            fg="white",
+            font=("Arial", 12, "bold"),
+            width=12,
+            command=self._cerrar_cerradura
+        ).pack(side="left", padx=10)
+
+        # Indicador de estado
+        self.cerradura_estado = tk.Label(
+            parent,
+            text="Estado: Cerrada",
+            bg=COLORS["background"],
+            font=("Arial", 11),
+            fg="#666"
+        )
+        self.cerradura_estado.pack(pady=5)
 
     # -----------------------
     # Utilidades (apariencia)
@@ -360,35 +362,58 @@ class DeviceDetailWindow(tk.Toplevel):
         self.active = not self.active
         self.device["active"] = self.active
         self._update_state_button()
-        
+
         # Enviar comando al hardware vía serial
         tipo_dispositivo = self.device.get("tipo", "").lower()
-        
+
         # Mapeo de tipos a nombres de comando
         mapeo_comandos = {
+            # === Nombres de TU sistema (encontrados en devices.json) ===
+            "sensor_de_movimiento_universal": "pir",
+            "detector_laser": "laser",
+            "detector_láser": "laser",
+            "boton_de_panico": "panico",
+            "botón_de_pánico": "panico",
+            "simulador_de_presencia": "presencia",
+            "alarma_silenciosa": "panico",  # Mismo hardware que pánico
+            "cerradura_inteligente": None,  # Se controla desde main_menu
+
+            # === Nombres originales (por compatibilidad) ===
             "sensor pir": "pir",
             "sensor de humo": "humo",
             "sensor de puerta": "puerta",
             "sensor láser": "laser",
+            "sensor laser": "laser",
             "botón de pánico": "panico",
+            "boton de panico": "panico",
             "simulador de presencia": "presencia",
+
+            # === Variaciones comunes ===
+            "sensor_de_humo": "humo",
+            "detector_de_humo": "humo",
+            "sensor_humo": "humo",
+            "sensor_de_puerta": "puerta",
+            "sensor_puerta": "puerta",
+            "reed_switch": "puerta",
+            "sensor_laser": "laser",
+            "sensor_láser": "laser",
         }
-        
-        comando = mapeo_comandos.get(tipo_dispositivo)
-        
-        if comando:
-            if self.active:
+
+        if comando := mapeo_comandos.get(tipo_dispositivo):
+            if self.serial_comm is None:
+                mensaje = "Error: No hay conexión serial"
+            elif self.active:
                 self.serial_comm.activar_dispositivo(comando)
-                mensaje = f"Estado cambiado a Activado - Comando enviado al hardware"
+                mensaje = "Estado cambiado a Activado - Comando enviado al hardware"
             else:
                 self.serial_comm.desactivar_dispositivo(comando)
-                mensaje = f"Estado cambiado a Desactivado - Comando enviado al hardware"
+                mensaje = "Estado cambiado a Desactivado - Comando enviado al hardware"
         else:
             mensaje = f"Estado cambiado a {'Activado' if self.active else 'Desactivado'}"
-        
+
         # Escribir en historial
         self._append_history(mensaje)
-        
+
         # Guardar cambios
         self.device_manager.save_devices()
 
